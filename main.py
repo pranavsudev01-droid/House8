@@ -1,13 +1,28 @@
 
 import os
+import logging
+
 from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
-    ContextTypes
+    ContextTypes,
 )
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
+
+
+# START COMMAND
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     message = """
 🏠 HOUSE8 TRADING BOT
 
@@ -26,41 +41,76 @@ Available commands:
 ⏱ Timeframes: M1 & M5
 
 ⚠️ Signals are under development.
-    """
+"""
     await update.message.reply_text(message)
 
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+# STATUS COMMAND
+async def status(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     await update.message.reply_text(
-        "🏠 HOUSE8\n\n"
-        "Bot setup: Initial stage\n"
-        "Signal engine: Not connected\n"
-        "Market data: Not connected\n"
-        "Tracking: Not connected"
+        "🟢 HOUSE8 BOT STATUS\n\n"
+        "Bot is online.\n"
+        "Ichimoku signal system: Under development."
     )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+# HELP COMMAND
+async def help_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     await update.message.reply_text(
-        "House8 Help\n\n"
+        "🏠 HOUSE8 HELP\n\n"
         "/start - Welcome message\n"
         "/status - System status\n"
-        "/help - Help"
+        "/help - Help information"
     )
 
+
+# MAIN FUNCTION
 def main():
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 
     if not token:
-        raise RuntimeError("Telegram token is not configured")
+        raise RuntimeError(
+            "TELEGRAM_BOT_TOKEN is missing from GitHub Secrets."
+        )
 
-    app = Application.builder().token(token).build()
+    application = (
+        Application.builder()
+        .token(token)
+        .connect_timeout(30)
+        .read_timeout(30)
+        .write_timeout(30)
+        .pool_timeout(30)
+        .get_updates_read_timeout(30)
+        .build()
+    )
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("help", help_command))
+    # Register commands
+    application.add_handler(
+        CommandHandler("start", start)
+    )
 
-    print("House8 is starting...")
-    app.run_polling()
+    application.add_handler(
+        CommandHandler("status", status)
+    )
+
+    application.add_handler(
+        CommandHandler("help", help_command)
+    )
+
+    logger.info("HOUSE8 BOT IS STARTING...")
+
+    # Start Telegram bot
+    application.run_polling(
+        drop_pending_updates=True
+    )
+
 
 if __name__ == "__main__":
     main()
-  
